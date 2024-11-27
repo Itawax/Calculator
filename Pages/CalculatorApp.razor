@@ -1,0 +1,100 @@
+﻿@page "/calculator"
+<h3>Calculator</h3>
+
+@using Calculator.Data
+@inject NotificationService NotificationService
+
+<RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem" Wrap="FlexWrap.Wrap">
+    <RadzenCard Style="width:50%; height:70px; align-self:center; font-size:30px; text-align:right;">
+        @displayText
+    </RadzenCard>
+</RadzenStack>
+<RadzenStack Orientation='Orientation.Horizontal' AlignItems='AlignItems.Center' Gap='1rem' Wrap='FlexWrap.Wrap'>
+    <RadzenStack Orientation='Orientation.Vertical' AlignItems='AlignItems.Center' Gap='1rem' Wrap='FlexWrap.Wrap'>
+        <RadzenStack Orientation='Orientation.Horizontal' AlignItems='AlignItems.Center' Gap='1rem' Wrap='FlexWrap.Wrap'>
+            <RadzenButton Click=@(args => OnClick('1')) Text='1' ButtonStyle='ButtonStyle.Base' />
+            <RadzenButton Click=@(args => OnClick('2')) Text='2' ButtonStyle='ButtonStyle.Base' />
+            <RadzenButton Click=@(args => OnClick('3')) Text='3' ButtonStyle='ButtonStyle.Base' />
+            <RadzenButton Click=@(args => OnClick('+')) Text='+' ButtonStyle='ButtonStyle.Info' />
+        </RadzenStack>
+        <RadzenStack Orientation='Orientation.Horizontal' AlignItems='AlignItems.Center' Gap='1rem' Wrap='FlexWrap.Wrap'>
+            <RadzenButton Click=@(args => OnClick('4')) Text='4' ButtonStyle='ButtonStyle.Base' />
+            <RadzenButton Click=@(args => OnClick('5')) Text='5' ButtonStyle='ButtonStyle.Base' />
+            <RadzenButton Click=@(args => OnClick('6')) Text='6' ButtonStyle='ButtonStyle.Base' />
+            <RadzenButton Click=@(args => OnClick('-')) Text='-' ButtonStyle='ButtonStyle.Info' />
+        </RadzenStack>
+        <RadzenStack Orientation='Orientation.Horizontal' AlignItems='AlignItems.Center' Gap='1rem' Wrap='FlexWrap.Wrap'>
+            <RadzenButton Click=@(args => OnClick('7')) Text='7' ButtonStyle='ButtonStyle.Base' />
+            <RadzenButton Click=@(args => OnClick('8')) Text='8' ButtonStyle='ButtonStyle.Base' />
+            <RadzenButton Click=@(args => OnClick('9')) Text='9' ButtonStyle='ButtonStyle.Base' />
+            <RadzenButton Click=@(args => OnClick('*')) Text='*' ButtonStyle='ButtonStyle.Info' />
+        </RadzenStack>
+        <RadzenStack Orientation='Orientation.Horizontal' AlignItems='AlignItems.Center' Gap='1rem' Wrap='FlexWrap.Wrap'>
+            <RadzenButton Click=@(args => OnClick('0')) Text='0' ButtonStyle='ButtonStyle.Base' />
+            <RadzenButton Click=@(args => OnClick(',')) Text=',' ButtonStyle='ButtonStyle.Base' />
+            <RadzenButton Click=@(args => OnClick('C')) Text='C' ButtonStyle='ButtonStyle.Warning' />
+            <RadzenButton Click=@(args => OnClick('/')) Text='/' ButtonStyle='ButtonStyle.Info' />
+        </RadzenStack>
+        <RadzenStack Orientation="Orientation.Horizontal" AlignItems="AlignItems.Center" Gap="1rem" Wrap="FlexWrap.Wrap">
+            <RadzenButton Click=@(args => OnClickSolve()) Text="SOLVE" ButtonStyle="ButtonStyle.Danger" />
+        </RadzenStack>
+    </RadzenStack>
+    <RadzenListBox TValue="string" Data=@historyQueue Style="width: 28.5%; height:220px" />
+</RadzenStack>
+
+@code {
+    string displayText = "";
+    CalcValidator validator;
+    bool valid, resultOut = false;
+    double result;
+    Queue<string> historyQueue = new Queue<string>();
+    int n = 1;
+    DbService dbService = new DbService();
+
+    protected override async Task OnInitializedAsync()
+    {
+        validator = new CalcValidator();
+    }
+
+
+    private void OnClick(char matSymbol)
+    {
+        if (matSymbol == 'C')
+        {
+            resultOut = false;
+            displayText = "";
+            validator.Reset();
+            return;
+        }
+        else
+        {
+            valid = validator.ValidateInput(matSymbol);
+
+            if(valid)
+            {
+                if (resultOut)
+                {
+                    displayText = "" + matSymbol;
+                    resultOut = false;
+                }
+                else
+                    displayText = displayText + matSymbol;
+            }
+        }
+
+    }
+    private void OnClickSolve()
+    {
+        result = CalcSolver.Solve(displayText);
+        historyQueue.Enqueue($"{n}: {displayText}={result}");
+        //dbService.InsertNewExpression($"{n}: { displayText}={ result}");
+        n++;
+
+        if (historyQueue.Count > 10)
+            historyQueue.Dequeue();
+
+        displayText = result.ToString();
+        resultOut = true;
+        validator.Reset();
+    }
+}
